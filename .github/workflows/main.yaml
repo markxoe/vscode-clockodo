@@ -1,0 +1,42 @@
+on:
+  push:
+
+jobs:
+  check-commits:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install convco
+        run: |
+          curl -OL https://github.com/convco/convco/releases/latest/download/convco-deb.zip
+          unzip convco-deb.zip
+          sudo dpkg -i convco*.deb
+          rm convco*.deb convco-deb.zip
+      - name: Check commits
+        run: convco check
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "node"
+      - run: npm install
+      - run: npm run lint
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "node"
+      - run: npm install -g @vscode/vsce
+      - run: npm install
+      - run: vsce package
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vscode-extension
+          path: "*.vsix"

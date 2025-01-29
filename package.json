@@ -1,0 +1,151 @@
+{
+  "name": "unofficial-clockodo",
+  "displayName": "Unofficial Clockodo",
+  "icon": "resources/icons/marketplace.png",
+  "publisher": "markxoe",
+  "description": "Unofficial extension to track time with clockodo",
+  "version": "0.0.0",
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "unofficial-clockodo.login",
+        "title": "Login",
+        "category": "Unofficial Clockodo"
+      },
+      {
+        "command": "unofficial-clockodo.logout",
+        "title": "Logout",
+        "category": "Unofficial Clockodo"
+      },
+      {
+        "command": "unofficial-clockodo.clearRecents",
+        "title": "Clear recent customers, activities and projects",
+        "category": "Unofficial Clockodo"
+      },
+      {
+        "command": "unofficial-clockodo.reloadCustomersProjects",
+        "category": "Unofficial Clockodo",
+        "title": "Reload customers and projects",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "unofficial-clockodo.reloadActivity",
+        "category": "Unofficial Clockodo",
+        "title": "Reload activity",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "unofficial-clockodo.startClock",
+        "category": "Unofficial Clockodo",
+        "title": "Start Clock",
+        "icon": "$(play)"
+      },
+      {
+        "command": "unofficial-clockodo.stopClock",
+        "category": "Unofficial Clockodo",
+        "title": "Stop Clock",
+        "icon": "$(debug-pause)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "unofficial-clockodo",
+          "title": "Unofficial Clockodo",
+          "icon": "resources/icons/minimal.svg"
+        }
+      ]
+    },
+    "views": {
+      "unofficial-clockodo": [
+        {
+          "id": "unofficial-clockodo.activity",
+          "name": "Activity",
+          "type": "tree",
+          "contextualTitle": "Clockodo Activity"
+        },
+        {
+          "id": "unofficial-clockodo.customers",
+          "name": "Customers",
+          "type": "tree",
+          "contextualTitle": "Clockodo Customers"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "unofficial-clockodo.reloadCustomersProjects",
+          "when": "view == unofficial-clockodo.customers",
+          "group": "navigation"
+        },
+        {
+          "command": "unofficial-clockodo.reloadActivity",
+          "when": "view == unofficial-clockodo.activity",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "unofficial-clockodo.startClock",
+          "when": "view == unofficial-clockodo.customers && viewItem =='Project'",
+          "group": "inline"
+        },
+        {
+          "command": "unofficial-clockodo.stopClock",
+          "when": "view == unofficial-clockodo.activity && viewItem == 'Stop'",
+          "group": "inline"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Unofficial Clockodo",
+      "properties": {
+        "unofficialClockodo.activityFetchInterval": {
+          "type": "number",
+          "default": 10,
+          "description": "Interval in seconds for fetching the current activity from clockodo's server. Low values lead to high network traffic and server load while high values leads to different vscode windows being out of sync. Reload the extension after changing this value.",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.96.0",
+    "@typescript-eslint/eslint-plugin": "^8.17.0",
+    "@typescript-eslint/parser": "^8.17.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1",
+    "eslint": "^9.16.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.7.2",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "axios": "^1.7.9"
+  }
+}
