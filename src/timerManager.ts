@@ -83,11 +83,11 @@ export class TimerManager implements Disposable {
       this.eventEmitter.emit("change", this.currentClockEntry);
     }
 
-    // New entry started
+    // Entry changed (either new entry or edited entry)
     if (
       entryBefore &&
       this.currentClockEntry &&
-      entryBefore.id !== this.currentClockEntry.id
+      ClockodoTypes.entryDiffers(entryBefore, this.currentClockEntry)
     ) {
       this.eventEmitter.emit("change", this.currentClockEntry);
     }
