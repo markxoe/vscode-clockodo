@@ -26,4 +26,18 @@ export namespace ClockodoClock {
       stopped: ClockodoTypes.EntryTime;
       running: ClockodoTypes.EntryTime;
     }>(`v2/clock/${stopId}`);
+
+  export const clockEdit = async (
+    login: ClockodoLoginData,
+    id: number,
+    time_since: string,
+    time_since_before: string
+  ) =>
+    getAxios(login).put<{
+      updated: ClockodoTypes.EntryTime;
+      running: ClockodoTypes.EntryTime;
+    }>(`v2/clock/${id}`, {
+      time_since_before,
+      time_since,
+    });
 }

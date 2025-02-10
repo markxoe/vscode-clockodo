@@ -52,6 +52,16 @@ export class TimerManager implements Disposable {
     }
   }
 
+  private axiosErrorHandler(err: AxiosError) {
+    if (err.response?.status === 401) {
+      this.eventEmitter.emit("invalidLoginData");
+    } else {
+      window.showErrorMessage(`Error fetching clock: ${err.message}`);
+    }
+
+    return undefined;
+  }
+
   async reloadActivity() {
     if (!this.credentialProvider.isLoggedIn()) {
       return;
@@ -59,14 +69,7 @@ export class TimerManager implements Disposable {
 
     const result = await ClockodoClock.clockGet(
       this.credentialProvider.getCredentials()!
-    ).catch((err: AxiosError) => {
-      if (err.response?.status === 401) {
-        this.eventEmitter.emit("invalidLoginData");
-      } else {
-        window.showErrorMessage(`Error fetching clock: ${err.message}`);
-      }
-      return undefined;
-    });
+    ).catch((err: AxiosError) => this.axiosErrorHandler(err));
 
     if (!result) {
       return;
@@ -97,6 +100,30 @@ export class TimerManager implements Disposable {
     }
 
     this.loaded = true;
+  }
+
+  async editClockDuration(time_since: string, time_since_before: string) {
+    if (!this.credentialProvider.isLoggedIn()) {
+      return;
+    }
+
+    if (!this.currentClockEntry) {
+      return;
+    }
+
+    const ret = await ClockodoClock.clockEdit(
+      this.credentialProvider.getCredentials()!,
+      this.currentClockEntry!.id,
+      time_since,
+      time_since_before
+    ).catch((err: AxiosError) => this.axiosErrorHandler(err));
+
+    if (!ret) {
+      return;
+    }
+
+    this.currentClockEntry = ret.data.updated;
+    this.eventEmitter.emit("change", this.currentClockEntry);
   }
 
   on(
