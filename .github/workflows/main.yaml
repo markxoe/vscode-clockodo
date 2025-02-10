@@ -68,4 +68,4 @@ jobs:
             ${{ runner.os }}-node-
       - run: npm install -g @vscode/vsce
       - run: npm install
-      - run: npm test
+      - run: xvfb-run --auto-servernum -- npm test
