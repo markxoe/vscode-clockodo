@@ -232,24 +232,16 @@ export class CommandManager {
       title: "Entry Description",
     });
 
-    const res = await ClockodoClock.clockStart(
-      this.authService.getCredentials()!,
-      {
-        customers_id: customer_id!,
-        projects_id: project_id!,
-        services_id: service!.id,
-        text: description?.length ? description : undefined,
-      }
-    ).catch((e: AxiosError) => {
-      window.showErrorMessage(`Error starting clock: ${e.message}`);
-      return undefined;
+    const res = await this.timerManager.startClock({
+      customers_id: customer_id!,
+      projects_id: project_id!,
+      services_id: service!.id,
+      text: description?.length ? description : undefined,
     });
 
     if (res) {
       window.showInformationMessage("Clock started");
     }
-
-    this.timerManager.reloadActivity();
   }
 
   private async stopClockCmd() {
@@ -262,19 +254,11 @@ export class CommandManager {
       return;
     }
 
-    const res = await ClockodoClock.clockStop(
-      this.authService.getCredentials()!,
-      this.timerManager.getCurrentEntry()!.id
-    ).catch((e: AxiosError) => {
-      window.showErrorMessage(`Error stopping clock: ${e.message}`);
-      return undefined;
-    });
+    const res = await this.timerManager.stopClock();
 
     if (res) {
       window.showInformationMessage("Clock stopped");
     }
-
-    this.timerManager.reloadActivity();
   }
 
   private reloadCustomersProjectsCmd() {

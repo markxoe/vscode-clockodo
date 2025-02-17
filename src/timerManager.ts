@@ -52,6 +52,16 @@ export class TimerManager implements Disposable {
     }
   }
 
+  private axiosErrorHandler(err: AxiosError) {
+    if (err.response?.status === 401) {
+      this.eventEmitter.emit("invalidLoginData");
+    } else {
+      window.showErrorMessage(`Error fetching clock: ${err.message}`);
+    }
+
+    return undefined;
+  }
+
   async reloadActivity() {
     if (!this.credentialProvider.isLoggedIn()) {
       return;
@@ -59,14 +69,7 @@ export class TimerManager implements Disposable {
 
     const result = await ClockodoClock.clockGet(
       this.credentialProvider.getCredentials()!
-    ).catch((err: AxiosError) => {
-      if (err.response?.status === 401) {
-        this.eventEmitter.emit("invalidLoginData");
-      } else {
-        window.showErrorMessage(`Error fetching clock: ${err.message}`);
-      }
-      return undefined;
-    });
+    ).catch((err: AxiosError) => this.axiosErrorHandler(err));
 
     if (!result) {
       return;
@@ -116,5 +119,66 @@ export class TimerManager implements Disposable {
 
   getCurrentEntry() {
     return this.currentClockEntry;
+  }
+
+  async startClock({
+    customers_id,
+    projects_id,
+    services_id,
+    text,
+  }: {
+    customers_id: number;
+    projects_id: number;
+    services_id: number;
+    text?: string;
+  }) {
+    if (!this.credentialProvider.isLoggedIn()) {
+      return false;
+    }
+
+    const res = await ClockodoClock.clockStart(
+      this.credentialProvider.getCredentials()!,
+      {
+        customers_id,
+        projects_id,
+        services_id,
+        text,
+      }
+    ).catch((err: AxiosError) => this.axiosErrorHandler(err));
+
+    if (!res) {
+      return false;
+    }
+
+    const clock_started_before = !!this.currentClockEntry;
+
+    this.currentClockEntry = res.data.running;
+    if (!clock_started_before) {
+      this.eventEmitter.emit("start", this.currentClockEntry);
+    }
+    this.eventEmitter.emit("change", this.currentClockEntry);
+
+    return true;
+  }
+
+  async stopClock() {
+    if (!this.credentialProvider.isLoggedIn()) {
+      return false;
+    }
+
+    const res = await ClockodoClock.clockStop(
+      this.credentialProvider.getCredentials()!,
+      this.currentClockEntry!.id
+    ).catch((err: AxiosError) => this.axiosErrorHandler(err));
+
+    if (!res) {
+      return false;
+    }
+
+    this.currentClockEntry = undefined;
+    this.eventEmitter.emit("stop");
+    this.eventEmitter.emit("change", this.currentClockEntry);
+
+    return true;
   }
 }
