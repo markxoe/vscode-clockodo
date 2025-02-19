@@ -28,49 +28,60 @@ export class StateRepository {
     this.stateStorage = stateStorage;
   }
 
-  getLastCustomers(): number[] {
-    return this.stateStorage.get("lastCustomers", []);
-  }
-  addLastCustomer(customerId: number) {
-    let lastCustomers = this.getLastCustomers();
-    lastCustomers = lastCustomers.filter((c) => c !== customerId);
-    lastCustomers.unshift(customerId);
-    this.stateStorage.update("lastCustomers", lastCustomers);
-  }
-
-  getLastServices(): number[] {
-    return this.stateStorage.get("lastServices", []);
-  }
-  addLastService(serviceId: number) {
-    let lastServices = this.getLastServices();
-    lastServices = lastServices.filter((s) => s !== serviceId);
-    lastServices.unshift(serviceId);
-    this.stateStorage.update("lastServices", lastServices);
+  getRecentEntries(): {
+    customerId: number;
+    serviceId: number;
+    projectId?: number;
+    text?: string;
+  }[] {
+    return this.stateStorage.get("recentEntries", []);
   }
 
-  getLastProjects(
-    customerId?: number
-  ): { projectId: number; customerId: number }[] {
-    const raw = this.stateStorage.get<
-      { projectId: number; customerId: number }[]
-    >("lastProjects", []);
-    if (!customerId) {
-      return raw;
-    }
-    return raw.filter((p) => p.customerId === customerId);
-  }
-  addLastProject(projectId: number, customerId: number) {
-    let lastProjects = this.getLastProjects();
-    lastProjects = lastProjects.filter(
-      (p) => !(p.projectId === projectId && p.customerId === customerId)
+  addRecentEntry(
+    customerId: number,
+    serviceId: number,
+    projectId?: number,
+    text?: string
+  ) {
+    let recentEntries = this.getRecentEntries();
+    recentEntries = recentEntries.filter(
+      (e) =>
+        e.customerId !== customerId ||
+        e.serviceId !== serviceId ||
+        (e.projectId !== projectId && e.projectId !== undefined) ||
+        (e.text !== text && e.text !== undefined)
     );
-    lastProjects.unshift({ projectId, customerId });
-    this.stateStorage.update("lastProjects", lastProjects);
+    recentEntries.unshift({ customerId, serviceId, projectId, text });
+    this.stateStorage.update("recentEntries", recentEntries);
+  }
+
+  getRecentCustomers() {
+    let customerIds = this.getRecentEntries().map((e) => e.customerId);
+    let uniqueCustomerIds = Array.from(new Set(customerIds));
+    return uniqueCustomerIds;
+  }
+
+  getRecentProjects(customer: number) {
+    let projectIds = this.getRecentEntries()
+      .filter((e) => e.customerId === customer)
+      .map((e) => e.projectId);
+    let uniqueServiceIds = Array.from(new Set(projectIds));
+    return uniqueServiceIds;
+  }
+
+  getRecentServices(customer: number, project?: number) {
+    const projectSpecificServices = this.getRecentEntries()
+      .filter((e) => e.customerId === customer && e.projectId === project)
+      .map((e) => e.serviceId);
+    const allServices = this.getRecentEntries().map((e) => e.serviceId);
+    const uniqueServiceIds = Array.from(
+      new Set([...projectSpecificServices, ...allServices])
+    );
+    // todo: customer-specific services before all services
+    return uniqueServiceIds;
   }
 
   clearRecents() {
-    this.stateStorage.update("lastCustomers", []);
-    this.stateStorage.update("lastServices", []);
-    this.stateStorage.update("lastProjects", []);
+    this.stateStorage.update("recentEntries", []);
   }
 }
