@@ -48,7 +48,7 @@ export class StateRepository {
       (e) =>
         e.customerId !== customerId ||
         e.serviceId !== serviceId ||
-        (e.projectId !== projectId && e.projectId !== undefined) ||
+        e.projectId !== projectId ||
         (e.text !== text && e.text !== undefined)
     );
     recentEntries.unshift({ customerId, serviceId, projectId, text });

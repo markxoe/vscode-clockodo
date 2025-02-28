@@ -123,6 +123,25 @@ suite("StateRepository", () => {
     );
   });
 
+  test("Entries with and without project_id are reordered correctly", () => {
+    stateRepository.addRecentEntry(1, 7, 8);
+    stateRepository.addRecentEntry(1, 7, undefined);
+    stateRepository.addRecentEntry(2, 5, undefined);
+    stateRepository.addRecentEntry(2, 5, 9);
+
+    stateRepository.addRecentEntry(1, 7, 8);
+    stateRepository.addRecentEntry(1, 7, undefined);
+    stateRepository.addRecentEntry(2, 5, undefined);
+    stateRepository.addRecentEntry(2, 5, 9);
+
+    assert.deepStrictEqual(stateRepository.getRecentEntries(), [
+      { customerId: 2, serviceId: 5, projectId: 9, text: undefined },
+      { customerId: 2, serviceId: 5, projectId: undefined, text: undefined },
+      { customerId: 1, serviceId: 7, projectId: undefined, text: undefined },
+      { customerId: 1, serviceId: 7, projectId: 8, text: undefined },
+    ]);
+  });
+
   test("Recent services contains project-specific services and all services", () => {
     stateRepository.addRecentEntry(1, 7, 8);
 
