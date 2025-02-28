@@ -4,6 +4,10 @@
   "icon": "resources/icons/marketplace.png",
   "publisher": "markxoe",
   "description": "Unofficial extension to track time with clockodo",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/markxoe/vscode-clockodo.git"
+  },
   "version": "0.1.4",
   "engines": {
     "vscode": "^1.96.0"
