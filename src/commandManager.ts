@@ -134,7 +134,7 @@ export class CommandManager {
         .showQuickPick(
           this.generateRecentQuickPickItems(
             customers,
-            this.stateRepository.getLastCustomers(),
+            this.stateRepository.getRecentCustomers(),
             "name"
           ),
           {
@@ -147,13 +147,7 @@ export class CommandManager {
           if (!value) {
             return undefined;
           }
-          const customer = customers.find((c) => c.name === value.label);
-
-          if (customer) {
-            this.stateRepository.addLastCustomer(customer.id);
-          }
-
-          return customer;
+          return customers.find((c) => c.name === value.label);
         });
 
       if (!customer) {
@@ -167,8 +161,8 @@ export class CommandManager {
           this.generateRecentQuickPickItems(
             projects.filter((p) => p.customers_id === customer!.id),
             this.stateRepository
-              .getLastProjects(customer.id)
-              .map((p) => p.projectId),
+              .getRecentProjects(customer.id)
+              .filter((p) => p !== undefined),
             "name"
           ),
           {
@@ -193,8 +187,6 @@ export class CommandManager {
       customer_id = data.customer_id!;
     }
 
-    this.stateRepository.addLastProject(project_id, customer_id);
-
     if (!project_id || !customer_id) {
       window.showErrorMessage("No project or customer selected");
       return;
@@ -206,7 +198,7 @@ export class CommandManager {
       .showQuickPick(
         this.generateRecentQuickPickItems(
           services,
-          this.stateRepository.getLastServices(),
+          this.stateRepository.getRecentServices(customer_id, project_id),
           "name"
         ),
         {
@@ -225,12 +217,17 @@ export class CommandManager {
       return;
     }
 
-    this.stateRepository.addLastService(service.id);
-
     const description = await window.showInputBox({
       prompt: "Enter an optional description",
       title: "Entry Description",
     });
+
+    this.stateRepository.addRecentEntry(
+      customer_id,
+      service.id,
+      project_id,
+      description
+    );
 
     const res = await this.timerManager.startClock({
       customers_id: customer_id!,
