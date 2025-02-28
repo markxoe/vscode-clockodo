@@ -73,11 +73,18 @@ export class StateRepository {
     const projectSpecificServices = this.getRecentEntries()
       .filter((e) => e.customerId === customer && e.projectId === project)
       .map((e) => e.serviceId);
+    const customerSpecificServices = this.getRecentEntries()
+      .filter((e) => e.customerId === customer)
+      .map((e) => e.serviceId);
     const allServices = this.getRecentEntries().map((e) => e.serviceId);
     const uniqueServiceIds = Array.from(
-      new Set([...projectSpecificServices, ...allServices])
+      new Set([
+        ...projectSpecificServices,
+        ...customerSpecificServices,
+        ...allServices,
+      ])
     );
-    // todo: customer-specific services before all services
+
     return uniqueServiceIds;
   }
 

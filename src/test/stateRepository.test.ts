@@ -118,7 +118,7 @@ suite("StateRepository", () => {
     );
     assert.deepStrictEqual(
       stateRepository.getRecentServices(4, undefined),
-      [0, 2, 8, 5],
+      [0, 5, 2, 8],
       "Services(4, undefined)"
     );
   });
@@ -153,7 +153,7 @@ suite("StateRepository", () => {
 
     assert.deepStrictEqual(
       stateRepository.getRecentServices(1, 3),
-      [5, 3, 2, 6, 1, 7]
+      [5, 3, 2, 7, 6, 1]
     );
     assert.deepStrictEqual(
       stateRepository.getRecentServices(0, 0),
@@ -163,7 +163,7 @@ suite("StateRepository", () => {
     // (yet) non-existing project
     assert.deepStrictEqual(
       stateRepository.getRecentServices(1, 0),
-      [6, 5, 1, 3, 2, 7]
+      [5, 3, 2, 7, 6, 1]
     );
 
     assert.deepStrictEqual(stateRepository.getRecentCustomers(), [0, 1]);
