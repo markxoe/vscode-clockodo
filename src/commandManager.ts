@@ -285,6 +285,11 @@ export class CommandManager {
       title: "Entry Description",
     });
 
+    if (description === undefined) {
+      window.showWarningMessage("Canceled");
+      return;
+    }
+
     this.stateRepository.addRecentEntry(
       customer_id,
       service.id,
@@ -296,7 +301,7 @@ export class CommandManager {
       customers_id: customer_id!,
       projects_id: project_id!,
       services_id: service!.id,
-      text: description?.length ? description : undefined,
+      text: description.length ? description : undefined,
     });
 
     if (res) {
