@@ -124,10 +124,76 @@ export class CommandManager {
       return;
     }
 
-    let project_id: number | undefined;
-    let customer_id: number | undefined;
+    let project_id: number | undefined = undefined;
+    let customer_id: number | undefined = undefined;
 
     if (!data) {
+      const recentEntries = this.stateRepository.getRecentEntries();
+      if (recentEntries.length > 0) {
+        const customersFut = this.clockodoRepository.getCustomers();
+        const projectsFut = this.clockodoRepository.getProjects();
+        const servicesFut = this.clockodoRepository.getServices();
+        const [customers, projects, services] = await Promise.all([
+          customersFut,
+          projectsFut,
+          servicesFut,
+        ]);
+
+        const todo = await window.showQuickPick([
+          { label: "New Entry", data: undefined },
+          { label: "Recent Entries", kind: QuickPickItemKind.Separator },
+          ...recentEntries.map((entry) => {
+            const serviceName = services.find(
+              (s) => s.id === entry.serviceId
+            )?.name;
+            const customerName = customers.find(
+              (c) => c.id === entry.customerId
+            )?.name;
+            const projectName = projects.find(
+              (p) => p.id === entry.projectId
+            )?.name;
+
+            return {
+              label: serviceName! + (entry.text ? `: ${entry.text}` : ""),
+              description: entry.text,
+              detail: customerName + " / " + projectName,
+              data: entry,
+            };
+          }),
+        ]);
+
+        if (todo === undefined) {
+          return;
+        }
+
+        if (todo.data !== undefined) {
+          this.stateRepository.addRecentEntry(
+            todo.data.customerId,
+            todo.data.serviceId,
+            todo.data.projectId,
+            todo.data.text
+          );
+
+          const res = await this.timerManager.startClock({
+            customers_id: todo.data.customerId,
+            projects_id: todo.data.projectId!,
+            services_id: todo.data.serviceId,
+            text: todo.data.text,
+          });
+
+          if (res) {
+            window.showInformationMessage("Clock started");
+          }
+
+          return;
+        }
+      }
+    } else {
+      project_id = data.project_id!;
+      customer_id = data.customer_id!;
+    }
+
+    if (!customer_id) {
       const customers = await this.clockodoRepository.getCustomers();
 
       const customer = await window
@@ -182,9 +248,6 @@ export class CommandManager {
 
       project_id = project!.id;
       customer_id = customer!.id;
-    } else {
-      project_id = data.project_id!;
-      customer_id = data.customer_id!;
     }
 
     if (!project_id || !customer_id) {
@@ -222,6 +285,11 @@ export class CommandManager {
       title: "Entry Description",
     });
 
+    if (description === undefined) {
+      window.showWarningMessage("Canceled");
+      return;
+    }
+
     this.stateRepository.addRecentEntry(
       customer_id,
       service.id,
@@ -233,7 +301,7 @@ export class CommandManager {
       customers_id: customer_id!,
       projects_id: project_id!,
       services_id: service!.id,
-      text: description?.length ? description : undefined,
+      text: description.length ? description : undefined,
     });
 
     if (res) {
