@@ -36,8 +36,8 @@ export class TimerManager implements Disposable {
     });
   }
 
-  init() {
-    this.reloadActivity();
+  async init() {
+    await this.reloadActivity();
 
     if (this.autoFetchInterval > 0) {
       this.autoFetchHandle = setInterval(async () => {
@@ -78,32 +78,27 @@ export class TimerManager implements Disposable {
     const entryBefore = this.currentClockEntry;
     this.currentClockEntry = result.data.running;
 
-    if (entryBefore && !this.currentClockEntry) {
-      this.eventEmitter.emit("stop", entryBefore);
+    const entryBeforePresent = !!entryBefore;
+    const entryPresent = !!this.currentClockEntry;
+    if (!this.loaded) {
+      // initial load
       this.eventEmitter.emit("change", this.currentClockEntry);
-    } else if (!entryBefore && this.currentClockEntry) {
-      this.eventEmitter.emit("start", this.currentClockEntry);
+      this.loaded = true;
+    } else if (entryBeforePresent !== entryPresent) {
+      // start/stop
       this.eventEmitter.emit("change", this.currentClockEntry);
-    }
-
-    // Entry changed (either new entry or edited entry)
-    if (
+    } else if (
       entryBefore &&
       this.currentClockEntry &&
       ClockodoTypes.entryDiffers(entryBefore, this.currentClockEntry)
     ) {
+      // entry changed
       this.eventEmitter.emit("change", this.currentClockEntry);
     }
-
-    if (!this.loaded) {
-      this.eventEmitter.emit("change", this.currentClockEntry);
-    }
-
-    this.loaded = true;
   }
 
   on(
-    event: "start" | "stop" | "change" | "invalidLoginData",
+    event: "change" | "invalidLoginData",
     listener: (entry?: ClockodoTypes.EntryTime) => void
   ) {
     this.eventEmitter.on(event, listener);
