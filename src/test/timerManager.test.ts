@@ -15,7 +15,8 @@ const runningDummy1: ClockodoTypes.EntryTime = {
   id: 1,
   type: ClockodoTypes.EntryType.TimeEntry,
   customers_id: 1,
-  services_id: 1,
+  services_id: 2,
+  projects_id: 3,
   users_id: 1,
   billable: ClockodoTypes.EntryBillable.Billable,
   clocked: true,
@@ -27,8 +28,9 @@ const runningDummy1: ClockodoTypes.EntryTime = {
 const runningDummy2: ClockodoTypes.EntryTime = {
   ...runningDummy1,
   id: 2,
-  customers_id: 2,
-  services_id: 2,
+  customers_id: 4,
+  services_id: 5,
+  projects_id: 6,
   time_since: "2021-01-02T00:00:00Z",
   text: "test",
 };
@@ -233,9 +235,6 @@ suite("TimerManager", () => {
     assert.deepEqual(changeEventData, undefined);
   });
 
-  // todo: clock is changed outside
-  // todo: re-start clock inside
-
   test("Start clock", async () => {
     authService.login("test", "test");
 
@@ -281,6 +280,201 @@ suite("TimerManager", () => {
     assert.equal(timerManager.isRunning(), true);
     assert.deepEqual(timerManager.getCurrentEntry(), runningDummy1);
     assert.equal(changeEventCounter, 2);
+    assert.deepEqual(changeEventData, runningDummy1);
+  });
+
+  test("Stop clock", async () => {
+    authService.login("test", "test");
+
+    mock
+      .onGet("https://my.clockodo.com/api/v2/clock")
+      .reply(200, { running: runningDummy1 });
+
+    timerManager.registerCallbacks();
+    await timerManager.init();
+
+    assert.equal(timerManager.isLoaded(), true);
+    assert.equal(timerManager.isRunning(), true);
+
+    let calls = 0;
+    mock
+      .onDelete(`https://my.clockodo.com/api/v2/clock/${runningDummy1.id}`)
+      .reply(() => {
+        calls++;
+        return [
+          200,
+          {
+            stopped: runningDummy1,
+            running: undefined,
+          },
+        ];
+      });
+
+    await timerManager.stopClock();
+
+    assert.equal(calls, 1);
+
+    assert.equal(timerManager.isLoaded(), true);
+    assert.equal(timerManager.isRunning(), false);
+    assert.deepEqual(timerManager.getCurrentEntry(), undefined);
+    assert.equal(changeEventCounter, 2);
+    assert.deepEqual(changeEventData, undefined);
+  });
+
+  test("Restart clock", async () => {
+    authService.login("test", "test");
+
+    mock
+      .onGet("https://my.clockodo.com/api/v2/clock")
+      .reply(200, { running: runningDummy1 });
+
+    timerManager.registerCallbacks();
+    await timerManager.init();
+
+    assert.equal(timerManager.isLoaded(), true);
+    assert.equal(timerManager.isRunning(), true);
+    assert.deepEqual(timerManager.getCurrentEntry(), runningDummy1);
+    assert.equal(changeEventCounter, 1);
+    assert.deepEqual(changeEventData, runningDummy1);
+
+    let requestData: any;
+    mock.onPost("https://my.clockodo.com/api/v2/clock").reply(({ data }) => {
+      requestData = JSON.parse(data);
+      return [
+        200,
+        {
+          running: runningDummy2,
+        },
+      ];
+    });
+
+    await timerManager.startClock({
+      customers_id: runningDummy2.customers_id,
+      projects_id: runningDummy2.projects_id!,
+      services_id: runningDummy2.services_id,
+      text: runningDummy2.text,
+    });
+
+    assert.deepEqual(requestData, {
+      customers_id: runningDummy2.customers_id,
+      projects_id: runningDummy2.projects_id!,
+      services_id: runningDummy2.services_id,
+      text: runningDummy2.text,
+    });
+
+    assert.equal(timerManager.isLoaded(), true);
+    assert.equal(timerManager.isRunning(), true);
+    assert.deepEqual(timerManager.getCurrentEntry(), runningDummy2);
+    assert.equal(changeEventCounter, 2);
+    assert.deepEqual(changeEventData, runningDummy2);
+  });
+
+  test("Logout with running clock", async () => {
+    authService.login("test", "test");
+
+    mock
+      .onGet("https://my.clockodo.com/api/v2/clock")
+      .reply(200, { running: runningDummy1 });
+
+    timerManager.registerCallbacks();
+    await timerManager.init();
+
+    assert.equal(timerManager.isLoaded(), true);
+    assert.equal(timerManager.isRunning(), true);
+    assert.deepEqual(timerManager.getCurrentEntry(), runningDummy1);
+    assert.equal(changeEventCounter, 1);
+    assert.deepEqual(changeEventData, runningDummy1);
+
+    await authService.logout();
+
+    assert.equal(timerManager.isLoaded(), false);
+    assert.equal(timerManager.isRunning(), false);
+    assert.deepEqual(timerManager.getCurrentEntry(), undefined);
+    assert.equal(changeEventCounter, 2);
+    assert.deepEqual(changeEventData, undefined);
+  });
+
+  test("Start clock while logged out", async () => {
+    assert.equal(timerManager.isLoaded(), false);
+    assert.equal(timerManager.isRunning(), false);
+    assert.deepEqual(timerManager.getCurrentEntry(), undefined);
+    assert.equal(changeEventCounter, 0);
+    assert.deepEqual(changeEventData, undefined);
+
+    let requestData: any = undefined;
+    mock.onPost("https://my.clockodo.com/api/v2/clock").reply(({ data }) => {
+      requestData = JSON.parse(data);
+      return [200, {}];
+    });
+
+    let res = await timerManager.startClock({
+      customers_id: 1,
+      projects_id: 2,
+      services_id: 3,
+      text: "test",
+    });
+    assert.equal(res, false);
+
+    assert.equal(requestData, undefined);
+
+    assert.equal(timerManager.isLoaded(), false);
+    assert.equal(timerManager.isRunning(), false);
+    assert.deepEqual(timerManager.getCurrentEntry(), undefined);
+    assert.equal(changeEventCounter, 0);
+    assert.deepEqual(changeEventData, undefined);
+  });
+
+  test("Stop clock while logged out", async () => {
+    assert.equal(timerManager.isLoaded(), false);
+    assert.equal(timerManager.isRunning(), false);
+    assert.deepEqual(timerManager.getCurrentEntry(), undefined);
+    assert.equal(changeEventCounter, 0);
+    assert.deepEqual(changeEventData, undefined);
+
+    let res = await timerManager.stopClock();
+    assert.equal(res, false);
+
+    assert.equal(timerManager.isLoaded(), false);
+    assert.equal(timerManager.isRunning(), false);
+    assert.deepEqual(timerManager.getCurrentEntry(), undefined);
+    assert.equal(changeEventCounter, 0);
+    assert.deepEqual(changeEventData, undefined);
+  });
+
+  test("Stop clock with auth error", async () => {
+    authService.login("test", "test");
+
+    mock
+      .onGet("https://my.clockodo.com/api/v2/clock")
+      .reply(200, { running: runningDummy1 });
+
+    timerManager.registerCallbacks();
+    await timerManager.init();
+
+    let invalidLoginDataCalls = 0;
+    timerManager.on("invalidLoginData", () => {
+      invalidLoginDataCalls++;
+    });
+
+    assert.equal(timerManager.isLoaded(), true);
+    assert.equal(timerManager.isRunning(), true);
+    assert.deepEqual(timerManager.getCurrentEntry(), runningDummy1);
+    assert.equal(changeEventCounter, 1);
+    assert.deepEqual(changeEventData, runningDummy1);
+
+    mock
+      .onDelete(`https://my.clockodo.com/api/v2/clock/${runningDummy1.id}`)
+      .reply(401, {});
+
+    let res = await timerManager.stopClock();
+    assert.equal(res, false);
+
+    assert.equal(invalidLoginDataCalls, 1);
+
+    assert.equal(timerManager.isLoaded(), true);
+    assert.equal(timerManager.isRunning(), true);
+    assert.deepEqual(timerManager.getCurrentEntry(), runningDummy1);
+    assert.equal(changeEventCounter, 1);
     assert.deepEqual(changeEventData, runningDummy1);
   });
 });

@@ -32,7 +32,13 @@ export class TimerManager implements Disposable {
     });
     this.credentialProvider.on("logout", () => {
       this.loaded = false;
+      let beforeRunning = !!this.currentClockEntry;
+
       this.currentClockEntry = undefined;
+
+      if (beforeRunning) {
+        this.eventEmitter.emit("change", undefined);
+      }
     });
   }
 
@@ -145,12 +151,7 @@ export class TimerManager implements Disposable {
       return false;
     }
 
-    const clock_started_before = !!this.currentClockEntry;
-
     this.currentClockEntry = res.data.running;
-    if (!clock_started_before) {
-      this.eventEmitter.emit("start", this.currentClockEntry);
-    }
     this.eventEmitter.emit("change", this.currentClockEntry);
 
     return true;
@@ -171,8 +172,7 @@ export class TimerManager implements Disposable {
     }
 
     this.currentClockEntry = undefined;
-    this.eventEmitter.emit("stop");
-    this.eventEmitter.emit("change", this.currentClockEntry);
+    this.eventEmitter.emit("change", undefined);
 
     return true;
   }
