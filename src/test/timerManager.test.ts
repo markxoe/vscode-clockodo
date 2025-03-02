@@ -1,5 +1,4 @@
 import assert from "assert";
-import { StateRepository } from "../stateRepository";
 import { DummySecretStorage, DummyStateStorage } from "./dummies";
 import axiosMock from "axios-mock-adapter";
 import axios from "axios";
