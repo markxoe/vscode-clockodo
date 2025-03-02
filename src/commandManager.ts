@@ -12,6 +12,7 @@ import { ClockoDoRepository } from "./clockodoRepository";
 import { CustomersView, DataProviderEntry } from "./customersView";
 import { ClockodoClock } from "./libs/api/clock";
 import { AxiosError } from "axios";
+import { secondsToHHMMSS, toIso8601, tryHHMMSSToSeconds } from "./utils";
 
 export class CommandManager {
   private authService: AuthService;
@@ -54,7 +55,48 @@ export class CommandManager {
       ),
       commands.registerCommand("unofficial-clockodo.clearRecents", () =>
         stateRepository.clearRecents()
+      ),
+      commands.registerCommand("unofficial-clockodo.editClockDuration", () =>
+        this.editClockDuration()
       )
+    );
+  }
+
+  async editClockDuration() {
+    const currentEntry = this.timerManager.getCurrentEntry();
+    if (!currentEntry || !currentEntry.time_clocked_since) {
+      window.showWarningMessage("No running clock");
+      return;
+    }
+
+    const time_since_before = currentEntry.time_since;
+
+    const currentDuration = Math.round(
+      (Date.now() - new Date(currentEntry.time_clocked_since).getTime()) / 1000
+    );
+
+    const duration = await window.showInputBox({
+      prompt: "Enter the new duration in [[hh:]mm:]ss",
+      ignoreFocusOut: true,
+      value: currentDuration ? secondsToHHMMSS(currentDuration) : undefined,
+      title: "Edit Clock Duration",
+      placeHolder: "hh:mm:ss",
+    });
+
+    if (!duration) {
+      return;
+    }
+
+    const durationSec = tryHHMMSSToSeconds(duration);
+    if (Number.isNaN(durationSec)) {
+      window.showErrorMessage("Invalid duration format");
+    }
+
+    const time_since = new Date(Date.now() - durationSec * 1000);
+
+    await this.timerManager.editClockDuration(
+      toIso8601(time_since),
+      time_since_before
     );
   }
 

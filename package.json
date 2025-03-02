@@ -59,6 +59,11 @@
         "category": "Unofficial Clockodo",
         "title": "Stop Clock",
         "icon": "$(debug-pause)"
+      },
+      {
+        "command": "unofficial-clockodo.editClockDuration",
+        "category": "Unofficial Clockodo",
+        "title": "Edit Clock Duration"
       }
     ],
     "viewsContainers": {

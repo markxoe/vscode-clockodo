@@ -103,6 +103,30 @@ export class TimerManager implements Disposable {
     }
   }
 
+  async editClockDuration(time_since: string, time_since_before: string) {
+    if (!this.credentialProvider.isLoggedIn()) {
+      return;
+    }
+
+    if (!this.currentClockEntry) {
+      return;
+    }
+
+    const ret = await ClockodoClock.clockEdit(
+      this.credentialProvider.getCredentials()!,
+      this.currentClockEntry!.id,
+      time_since,
+      time_since_before
+    ).catch((err: AxiosError) => this.axiosErrorHandler(err));
+
+    if (!ret) {
+      return;
+    }
+
+    this.currentClockEntry = ret.data.updated;
+    this.eventEmitter.emit("change", this.currentClockEntry);
+  }
+
   on(
     event: "change" | "invalidLoginData",
     listener: (entry?: ClockodoTypes.EntryTime) => void
