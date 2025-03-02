@@ -44,9 +44,10 @@ export namespace ClockodoTypes {
       a.texts_id !== b.texts_id ||
       a.time_since !== b.time_since ||
       a.time_until !== b.time_until ||
-      a.type !== b.type
+      a.type !== b.type ||
+      a.id !== b.id
     ) {
-      return false;
+      return true;
     }
 
     if (a.type === EntryType.TimeEntry) {
@@ -64,6 +65,6 @@ export namespace ClockodoTypes {
       );
     }
 
-    return true;
+    return false;
   };
 }
