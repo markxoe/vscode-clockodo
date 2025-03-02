@@ -154,7 +154,7 @@ export class CommandManager {
             )?.name;
 
             return {
-              label: serviceName!, //+ (entry.text ? ` / ${entry.text}` : ""),
+              label: serviceName! + (entry.text ? `: ${entry.text}` : ""),
               description: entry.text,
               detail: customerName + " / " + projectName,
               data: entry,
